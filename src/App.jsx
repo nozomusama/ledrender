@@ -144,20 +144,27 @@ const App = () => {
         pointsRef.current = points;
     };
 
+    // Calculate source dimensions for homography and texture
+    // This ensures that the DOM element size matches the source rect used for Matrix3D
+    const physicalRatio = (calcRes.actualW && calcRes.actualH) ? (calcRes.actualW / calcRes.actualH) : 1.5;
+    let srcW = 300;
+    let srcH = 300 / physicalRatio;
+
+    // Normalize to avoid extreme sizes
+    if (srcH > 300) { srcH = 300; srcW = 300 * physicalRatio; }
+
     useEffect(() => {
         if (!image || points.length === 0) return;
-        const W = 300, H = 200;
-        const src = [{ x: 0, y: 0 }, { x: W, y: 0 }, { x: W, y: H }, { x: 0, y: H }];
+
+        // Use calculated source dimensions
+        const src = [{ x: 0, y: 0 }, { x: srcW, y: 0 }, { x: srcW, y: srcH }, { x: 0, y: srcH }];
         const m = solveHomography(src, points);
         setMatrix3d(`matrix3d(${m.join(',')})`);
-    }, [points, image]);
+    }, [points, image, srcW, srcH]);
 
-    const simResults = (image && points.length > 0) ? (() => {
-        const pxWidth = Math.hypot(points[1].x - points[0].x, points[1].y - points[0].y);
-        const pxHeight = Math.hypot(points[3].x - points[0].x, points[3].y - points[0].y);
-        const aspectRatio = pxHeight / pxWidth;
-        return calculateResults(simWidthInput, simWidthInput * aspectRatio, selectedCabinetId, selectedPitch, cabinets);
-    })() : null;
+    // Use calculated results directly for simulation overlay
+    // This ensures values remain static regardless of corner movement
+    const simResults = (image && points.length > 0) ? calcRes : null;
 
     const getMagnifierStyle = () => {
         if (activePoint === null || !imgRef.current || !containerRef.current) return {};
@@ -503,7 +510,7 @@ Output: A photorealistic, professionally enhanced architectural photograph with 
                                     <img ref={imgRef} src={image} alt="Project Area" className="max-w-full max-h-full object-contain pointer-events-none select-none opacity-100" draggable="false" />
 
                                     {/* 3D LED SCREEN */}
-                                    <div className="absolute top-0 left-0 w-[300px] h-[200px] pointer-events-none origin-top-left z-10" style={{ transform: matrix3d, opacity: 1, filter: isRenderMode ? 'brightness(1.1) contrast(1.1)' : 'none' }}>
+                                    <div className="absolute top-0 left-0 pointer-events-none origin-top-left z-10" style={{ width: `${srcW}px`, height: `${srcH}px`, transform: matrix3d, opacity: 1, filter: isRenderMode ? 'brightness(1.1) contrast(1.1)' : 'none' }}>
                                         <div className={`w-full h-full relative overflow-hidden transition-all duration-500 ${isRenderMode ? 'bg-black shadow-[0_0_30px_rgba(0,100,255,0.4)]' : 'bg-black/60 border border-indigo-400'}`}>
                                             {isRenderMode && <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-900 opacity-90"></div>}
                                             <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'radial-gradient(circle, #000 1px, transparent 1px)', backgroundSize: '2px 2px' }}></div>
