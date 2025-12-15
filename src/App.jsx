@@ -79,12 +79,29 @@ const App = () => {
             const w = containerRef.current.clientWidth;
             const h = containerRef.current.clientHeight;
             const cx = w / 2, cy = h / 2;
-            const size = Math.min(w, h) * 0.2;
+
+            // Use calculated aspect ratio
+            const targetRatio = (calcRes.actualW && calcRes.actualH) ? (calcRes.actualW / calcRes.actualH) : 1;
+
+            // Base size (approx 40% of screen min dimension)
+            const baseScale = Math.min(w, h) * 0.25;
+
+            let halfW, halfH;
+            if (targetRatio >= 1) {
+                // Wider than tall
+                halfW = baseScale;
+                halfH = baseScale / targetRatio;
+            } else {
+                // Taller than wide
+                halfH = baseScale;
+                halfW = baseScale * targetRatio;
+            }
+
             const initialPoints = [
-                { x: cx - size, y: cy - size },
-                { x: cx + size, y: cy - size },
-                { x: cx + size, y: cy + size },
-                { x: cx - size, y: cy + size }
+                { x: cx - halfW, y: cy - halfH },
+                { x: cx + halfW, y: cy - halfH },
+                { x: cx + halfW, y: cy + halfH },
+                { x: cx - halfW, y: cy + halfH }
             ];
             setPoints(initialPoints);
             pointsRef.current = initialPoints;
@@ -261,6 +278,42 @@ Output: A photorealistic, professionally enhanced architectural photograph with 
         if (val > 0) setter(val);
     };
 
+    const handleSwitchToSim = () => {
+        setMode('sim');
+        setIsRenderMode(false);
+        setSimWidthInput(calcRes.actualW);
+
+        // Update aspect ratio of existing points if they exist
+        if (points.length === 4) {
+            const p = points;
+            const cx = (p[0].x + p[1].x + p[2].x + p[3].x) / 4;
+            const cy = (p[0].y + p[1].y + p[2].y + p[3].y) / 4;
+
+            // Current width in pixels (approx)
+            const currentPxW = Math.hypot(p[1].x - p[0].x, p[1].y - p[0].y);
+
+            // Calculate new height in pixels based on calculated aspect ratio
+            const targetRatio = (calcRes.actualW && calcRes.actualH) ? (calcRes.actualH / calcRes.actualW) : 1;
+            const newPxH = currentPxW * targetRatio;
+
+            const halfW = currentPxW / 2;
+            const halfH = newPxH / 2;
+
+            // Assume axis-aligned for simplicity during reset/update, 
+            // or we could try to preserve rotation, but usually it's axis aligned initially.
+            // A simple axis-aligned box centered at old center is safe enough for "reset to dims".
+            const newPoints = [
+                { x: cx - halfW, y: cy - halfH },
+                { x: cx + halfW, y: cy - halfH },
+                { x: cx + halfW, y: cy + halfH },
+                { x: cx - halfW, y: cy + halfH }
+            ];
+
+            setPoints(newPoints);
+            pointsRef.current = newPoints;
+        }
+    };
+
     return (
         <div className="fixed inset-0 bg-slate-950 text-slate-100 font-sans flex flex-col select-none touch-none overflow-hidden"
             style={{ backgroundColor: '#020617' }}>
@@ -323,11 +376,7 @@ Output: A photorealistic, professionally enhanced architectural photograph with 
                     <button onClick={() => { setMode('calc'); setIsRenderMode(false); }} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1 ${mode === 'calc' ? 'bg-indigo-600 text-white' : 'text-slate-400'}`}>
                         <Icons.Calc /> Hesap
                     </button>
-                    <button onClick={() => {
-                        setMode('sim');
-                        setIsRenderMode(false);
-                        setSimWidthInput(calcRes.actualW);
-                    }} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1 ${mode === 'sim' ? 'bg-emerald-600 text-white' : 'text-slate-400'}`}>
+                    <button onClick={handleSwitchToSim} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1 ${mode === 'sim' ? 'bg-emerald-600 text-white' : 'text-slate-400'}`}>
                         <Icons.Camera /> AR
                     </button>
                 </div>
