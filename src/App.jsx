@@ -323,7 +323,11 @@ Output: A photorealistic, professionally enhanced architectural photograph with 
                     <button onClick={() => { setMode('calc'); setIsRenderMode(false); }} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1 ${mode === 'calc' ? 'bg-indigo-600 text-white' : 'text-slate-400'}`}>
                         <Icons.Calc /> Hesap
                     </button>
-                    <button onClick={() => { setMode('sim'); setIsRenderMode(false); }} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1 ${mode === 'sim' ? 'bg-emerald-600 text-white' : 'text-slate-400'}`}>
+                    <button onClick={() => {
+                        setMode('sim');
+                        setIsRenderMode(false);
+                        setSimWidthInput(calcRes.actualW);
+                    }} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1 ${mode === 'sim' ? 'bg-emerald-600 text-white' : 'text-slate-400'}`}>
                         <Icons.Camera /> AR
                     </button>
                 </div>
